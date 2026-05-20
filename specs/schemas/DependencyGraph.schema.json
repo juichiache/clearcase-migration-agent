@@ -1,0 +1,209 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/juichiache/clearcase-migration-agent/specs/schemas/DependencyGraph.schema.json",
+  "title": "DependencyGraph",
+  "description": "Package-level directed dependency graph with circular dependency (SCC) detection. Produced by the Planning Agent.",
+  "type": "object",
+  "required": ["runId", "timestamp", "packages", "edges", "packageDependencies", "sccs"],
+  "additionalProperties": false,
+  "properties": {
+    "runId": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "packages": {
+      "type": "array",
+      "description": "All packages as nodes in the graph",
+      "items": {
+        "$ref": "#/definitions/PackageNode"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "description": "File-level include edges with macro context",
+      "items": {
+        "$ref": "#/definitions/IncludeEdge"
+      }
+    },
+    "packageDependencies": {
+      "type": "array",
+      "description": "Package-level aggregated dependency relationships",
+      "items": {
+        "$ref": "#/definitions/PackageDependency"
+      }
+    },
+    "sccs": {
+      "type": "array",
+      "description": "Strongly Connected Components — each with more than one member is a circular dependency",
+      "items": {
+        "$ref": "#/definitions/SCC"
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "totalPackages": { "type": "integer" },
+        "totalEdges": { "type": "integer" },
+        "circularDependencyCount": { "type": "integer" },
+        "unresolvedHeaderCount": { "type": "integer" }
+      }
+    }
+  },
+  "definitions": {
+    "PackageNode": {
+      "type": "object",
+      "required": ["packageName", "locked", "fileCount"],
+      "additionalProperties": false,
+      "properties": {
+        "packageName": { "type": "string" },
+        "locked": { "type": "boolean" },
+        "fileCount": { "type": "integer", "minimum": 0 },
+        "inDegree": { "type": "integer", "minimum": 0 },
+        "outDegree": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "IncludeEdge": {
+      "type": "object",
+      "required": ["id", "includer", "includee", "macroSets", "edgeStrength"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "includer": {
+          "type": "string",
+          "description": "File path of the including file (relative to view root)"
+        },
+        "includee": {
+          "type": "string",
+          "description": "Resolved file path of the included header (relative to view root)"
+        },
+        "includerPackage": { "type": "string" },
+        "includeePackage": { "type": "string" },
+        "macroSets": {
+          "type": "array",
+          "description": "Macro combinations under which this edge is active",
+          "items": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "edgeStrength": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Fraction of the including file's macro combos that activate this edge"
+        }
+      }
+    },
+    "PackageDependency": {
+      "type": "object",
+      "required": ["fromPackage", "toPackage", "strength"],
+      "additionalProperties": false,
+      "properties": {
+        "fromPackage": { "type": "string" },
+        "toPackage": { "type": "string" },
+        "strength": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Fraction of files in fromPackage that include files from toPackage"
+        },
+        "edgeIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "IDs of IncludeEdge entries contributing to this package dependency"
+        },
+        "macroContext": {
+          "type": "array",
+          "description": "Union of macro sets across all contributing edges",
+          "items": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        }
+      }
+    },
+    "SCC": {
+      "type": "object",
+      "required": ["id", "members", "cycleEdges", "proposedResolutions"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "members": {
+          "type": "array",
+          "description": "Package names in this SCC",
+          "items": { "type": "string" },
+          "minItems": 2
+        },
+        "cycleEdges": {
+          "type": "array",
+          "description": "The specific include relationships that form the cycle",
+          "items": {
+            "$ref": "#/definitions/CycleEdge"
+          }
+        },
+        "proposedResolutions": {
+          "type": "array",
+          "description": "Ranked resolution strategies (rank 1 = most preferred)",
+          "items": {
+            "$ref": "#/definitions/Resolution"
+          }
+        },
+        "resolutionStatus": {
+          "type": "string",
+          "enum": ["unresolved", "resolution_proposed", "approved", "deferred"],
+          "default": "unresolved"
+        }
+      }
+    },
+    "CycleEdge": {
+      "type": "object",
+      "required": ["fromPackage", "toPackage", "viaFiles"],
+      "additionalProperties": false,
+      "properties": {
+        "fromPackage": { "type": "string" },
+        "toPackage": { "type": "string" },
+        "viaFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["includer", "includee"],
+            "additionalProperties": false,
+            "properties": {
+              "includer": { "type": "string" },
+              "includee": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "Resolution": {
+      "type": "object",
+      "required": ["rank", "strategy", "description", "estimatedRisk"],
+      "additionalProperties": false,
+      "properties": {
+        "rank": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1 = most preferred"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": ["extract_interface_header", "merge_packages", "introduce_indirection", "new_shared_package"]
+        },
+        "description": { "type": "string" },
+        "estimatedRisk": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "affectedFiles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

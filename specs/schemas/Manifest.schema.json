@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/juichiache/clearcase-migration-agent/specs/schemas/Manifest.schema.json",
+  "title": "Manifest",
+  "description": "Run metadata for both Planning and Implementation agent runs. Written at start (status: running) and updated at completion. Shared schema for both agent types.",
+  "type": "object",
+  "required": ["runId", "agentType", "timestamp", "status", "product", "release"],
+  "additionalProperties": false,
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Unique run identifier. Convention: {agentType}-{yyyyMMdd}T{HHmmss}Z[-suffix]",
+      "examples": ["plan-20241215T143022Z", "impl-20241215T161500Z-libcore"]
+    },
+    "agentType": {
+      "type": "string",
+      "enum": ["planning", "implementation"]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Run start time"
+    },
+    "completedAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Run completion time"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["running", "complete", "error", "approved"],
+      "description": "running → complete/error → approved (for planning runs that have been merged)"
+    },
+    "product": {
+      "type": "string",
+      "description": "Product identifier scope for this run"
+    },
+    "release": {
+      "type": "string",
+      "description": "Release identifier (e.g., R2024.1)"
+    },
+    "viewPath": {
+      "type": "string",
+      "description": "ClearCase view path used at runtime. May be redacted in artifacts pushed to GitHub."
+    },
+    "agentVersion": {
+      "type": "string",
+      "description": "Semver of the migration agent used"
+    },
+    "planRunId": {
+      "type": ["string", "null"],
+      "description": "For implementation runs: the planning run ID this run is based on. Null for planning runs."
+    },
+    "targetPackage": {
+      "type": ["string", "null"],
+      "description": "For implementation runs: the package being implemented. Null for planning runs."
+    },
+    "planPrUrl": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "For planning runs: URL of the plan PR opened in the workspace repo"
+    },
+    "planPrNumber": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "approvedBy": {
+      "type": ["string", "null"],
+      "description": "GitHub username of the plan approver (set when status → approved)"
+    },
+    "approvedAt": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "artifactPaths": {
+      "type": "object",
+      "description": "Map of artifact type to relative file path within the run directory",
+      "additionalProperties": { "type": "string" },
+      "examples": [
+        {
+          "PackageAssignment": "PackageAssignment.json",
+          "DependencyGraph": "DependencyGraph.json",
+          "MacroMatrix": "MacroMatrix.json",
+          "RunLogEvent": "RunLogEvent.jsonl"
+        }
+      ]
+    },
+    "errorMessage": {
+      "type": ["string", "null"],
+      "description": "Error message if status is 'error'"
+    },
+    "flags": {
+      "type": "object",
+      "description": "Flags active during this run",
+      "additionalProperties": false,
+      "properties": {
+        "enableWrites": { "type": "boolean", "default": false },
+        "planApproved": { "type": "boolean", "default": false },
+        "dryRun": { "type": "boolean", "default": false }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "description": "Summary statistics (schema varies by agentType)",
+      "additionalProperties": true
+    }
+  }
+}

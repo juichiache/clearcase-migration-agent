@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/juichiache/clearcase-migration-agent/specs/schemas/UserDecisions.schema.json",
+  "title": "UserDecisions",
+  "description": "Captures all Q&A interactions between the Planning Agent and engineers. Provides a traceable audit trail for decisions that shaped the package partition.",
+  "type": "object",
+  "required": ["runId", "timestamp", "decisions"],
+  "additionalProperties": false,
+  "properties": {
+    "runId": { "type": "string" },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the last update to this file"
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/UserDecision"
+      }
+    }
+  },
+  "definitions": {
+    "UserDecision": {
+      "type": "object",
+      "required": ["id", "question", "answer", "timestamp"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique decision identifier (e.g., 'dec-001')"
+        },
+        "question": {
+          "type": "string",
+          "description": "The question posed by the agent to the engineer"
+        },
+        "answer": {
+          "type": "string",
+          "description": "The engineer's response"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the answer was recorded"
+        },
+        "sectionReference": {
+          "type": "string",
+          "description": "Which open-question or spec section prompted this question (e.g., 'open-questions.md §5.3')"
+        },
+        "impactedAssignments": {
+          "type": "array",
+          "description": "File paths whose PackageAssignment entries are shaped by this decision",
+          "items": { "type": "string" }
+        },
+        "impactedPackages": {
+          "type": "array",
+          "description": "Package names affected by this decision",
+          "items": { "type": "string" }
+        },
+        "decisionType": {
+          "type": "string",
+          "enum": [
+            "assignment_override",
+            "cycle_resolution",
+            "orphan_handling",
+            "forkable_declaration",
+            "ambiguous_header",
+            "scope_change",
+            "other"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Agent's confidence that this decision has been correctly captured and applied"
+        }
+      }
+    }
+  }
+}

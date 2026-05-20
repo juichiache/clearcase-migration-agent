@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/juichiache/clearcase-migration-agent/specs/schemas/RunLogEvent.schema.json",
+  "title": "RunLogEvent",
+  "description": "Schema for a single line in RunLogEvent.jsonl. Every skill invocation produces at least two events: one with phase 'start' and one with phase 'complete' or 'error'. The file is append-only.",
+  "type": "object",
+  "required": ["timestamp", "runId", "skill", "phase"],
+  "additionalProperties": false,
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of this log event"
+    },
+    "runId": {
+      "type": "string",
+      "description": "The run this event belongs to"
+    },
+    "skill": {
+      "type": "string",
+      "description": "Name of the skill being invoked",
+      "examples": [
+        "build_record_ingester",
+        "existing_package_loader",
+        "fw_include_graph",
+        "macro_matrix",
+        "header_pruner",
+        "dependency_breaker",
+        "copy_map_generator",
+        "compiler_error_tracer",
+        "pr_reviewer",
+        "pr_writer",
+        "user_dialog"
+      ]
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["start", "complete", "error"],
+      "description": "start: skill began; complete: skill finished successfully; error: skill failed"
+    },
+    "inputs": {
+      "type": ["object", "null"],
+      "description": "Summary of inputs (not full data — avoid logging large structures). Only present on 'start' events.",
+      "additionalProperties": true
+    },
+    "outputs": {
+      "type": ["object", "null"],
+      "description": "Summary of outputs (not full data). Only present on 'complete' events.",
+      "additionalProperties": true
+    },
+    "durationMs": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Elapsed time in milliseconds. Present on 'complete' and 'error' events."
+    },
+    "error": {
+      "type": ["string", "null"],
+      "description": "Error message. Present on 'error' events only."
+    },
+    "errorCode": {
+      "type": ["string", "null"],
+      "description": "Machine-readable error code for programmatic handling"
+    },
+    "warningCount": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Number of warnings emitted by this skill invocation"
+    },
+    "sessionId": {
+      "type": ["string", "null"],
+      "description": "Optional: GitHub Copilot Chat session ID for correlation"
+    }
+  }
+}

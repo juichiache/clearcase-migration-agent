@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/juichiache/clearcase-migration-agent/specs/schemas/MacroMatrix.schema.json",
+  "title": "MacroMatrix",
+  "description": "Per-package observed macro combinations mapped to Conan option definitions. The source of truth for all generated conanfile.py options.",
+  "type": "object",
+  "required": ["runId", "timestamp", "packages"],
+  "additionalProperties": false,
+  "properties": {
+    "runId": { "type": "string" },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PackageMacroMatrix"
+      }
+    }
+  },
+  "definitions": {
+    "PackageMacroMatrix": {
+      "type": "object",
+      "required": ["packageName", "combinations", "conanOptions"],
+      "additionalProperties": false,
+      "properties": {
+        "packageName": { "type": "string" },
+        "combinations": {
+          "type": "array",
+          "description": "All distinct macro combinations observed across files in this package",
+          "items": {
+            "$ref": "#/definitions/ObservedCombination"
+          }
+        },
+        "conanOptions": {
+          "type": "array",
+          "description": "The minimal set of Conan options that covers all observed combinations",
+          "items": {
+            "$ref": "#/definitions/ConanOption"
+          }
+        },
+        "coverageNote": {
+          "type": "string",
+          "description": "Optional note explaining any gap between observed combinations and option coverage"
+        },
+        "minimizationStrategy": {
+          "type": "string",
+          "enum": ["greedy", "exact"],
+          "description": "The strategy used to minimize options from combinations"
+        }
+      }
+    },
+    "ObservedCombination": {
+      "type": "object",
+      "required": ["id", "macros", "sourceFiles", "mappedToOption"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this combination within the package (e.g., 'combo-0')"
+        },
+        "macros": {
+          "type": "object",
+          "description": "Macro name → value map for this combination",
+          "additionalProperties": { "type": "string" }
+        },
+        "sourceFiles": {
+          "type": "array",
+          "description": "Files in this package that use this macro combination",
+          "items": { "type": "string" }
+        },
+        "mappedToOption": {
+          "type": "string",
+          "description": "The Conan option value string this combination maps to (e.g., 'threads=True,debug=False')"
+        }
+      }
+    },
+    "ConanOption": {
+      "type": "object",
+      "required": ["name", "type", "values", "defaultValue", "macroMapping", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Conan option name (snake_case)",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["bool", "enum"],
+          "description": "bool: values are [True, False]; enum: any set of string values"
+        },
+        "values": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "All valid option values. For bool: ['True', 'False']."
+        },
+        "defaultValue": {
+          "type": "string",
+          "description": "The default option value (must be in 'values')"
+        },
+        "macroMapping": {
+          "type": "object",
+          "description": "Maps this option's values to the macro(s) they control",
+          "additionalProperties": { "type": "string" }
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what this option controls"
+        }
+      }
+    }
+  }
+}

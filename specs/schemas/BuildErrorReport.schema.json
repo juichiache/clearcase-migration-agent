@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/juichiache/clearcase-migration-agent/specs/schemas/BuildErrorReport.schema.json",
+  "title": "BuildErrorReport",
+  "description": "CI build failure analysis produced by compiler_error_tracer. Contains classified errors with proposed fixes.",
+  "type": "object",
+  "required": ["runId", "timestamp", "packageName", "prNumber", "errors"],
+  "additionalProperties": false,
+  "properties": {
+    "runId": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "packageName": { "type": "string" },
+    "prNumber": { "type": "integer", "minimum": 1 },
+    "buildLogUrl": { "type": "string", "format": "uri" },
+    "ciRunId": { "type": "string" },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/BuildError"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "totalErrors": { "type": "integer", "minimum": 0 },
+        "byType": {
+          "type": "object",
+          "additionalProperties": { "type": "integer" }
+        },
+        "fixableAutomatically": { "type": "integer", "minimum": 0 },
+        "requiresHumanReview": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "definitions": {
+    "BuildError": {
+      "type": "object",
+      "required": ["id", "errorType", "location", "rawMessage", "diagnosis"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "errorType": {
+          "type": "string",
+          "enum": ["missing_include", "wrong_package", "undefined_symbol", "missing_option", "other"]
+        },
+        "location": {
+          "type": "object",
+          "required": ["file"],
+          "additionalProperties": false,
+          "properties": {
+            "file": { "type": "string" },
+            "line": { "type": ["integer", "null"], "minimum": 1 },
+            "column": { "type": ["integer", "null"], "minimum": 1 }
+          }
+        },
+        "rawMessage": {
+          "type": "string",
+          "description": "Original compiler error text"
+        },
+        "diagnosis": {
+          "type": "string",
+          "description": "Agent's interpretation of the error"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "proposedFix": {
+          "oneOf": [
+            { "$ref": "#/definitions/CopyMapFix" },
+            { "$ref": "#/definitions/OptionFix" },
+            { "$ref": "#/definitions/CodePatchFix" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "CopyMapFix": {
+      "type": "object",
+      "required": ["type", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["copy_map_change"] },
+        "description": { "type": "string" },
+        "fileToMove": { "type": "string" },
+        "fromPackage": { "type": "string" },
+        "toPackage": { "type": "string" }
+      }
+    },
+    "OptionFix": {
+      "type": "object",
+      "required": ["type", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["option_change"] },
+        "description": { "type": "string" },
+        "changeRef": { "type": "string" },
+        "optionName": { "type": "string" },
+        "newValue": { "type": "string" }
+      }
+    },
+    "CodePatchFix": {
+      "type": "object",
+      "required": ["type", "description", "patchProposalRef"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["code_patch"] },
+        "description": { "type": "string" },
+        "patchProposalRef": {
+          "type": "string",
+          "description": "ID of the PatchProposal entry that contains the actual patch"
+        }
+      }
+    }
+  }
+}

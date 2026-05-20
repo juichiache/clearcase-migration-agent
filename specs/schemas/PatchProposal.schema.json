@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/juichiache/clearcase-migration-agent/specs/schemas/PatchProposal.schema.json",
+  "title": "PatchProposal",
+  "description": "Proposed code patches from dependency_breaker or compiler_error_tracer. All patches require human approval before application.",
+  "type": "object",
+  "required": ["runId", "timestamp", "proposals"],
+  "additionalProperties": false,
+  "properties": {
+    "runId": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "proposals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Patch"
+      }
+    }
+  },
+  "definitions": {
+    "Patch": {
+      "type": "object",
+      "required": ["id", "patchType", "targetFile", "rationale", "unifiedDiff", "riskLevel", "approvalStatus"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique patch identifier (e.g., 'patch-scc-0-extract-types-fwd')"
+        },
+        "patchType": {
+          "type": "string",
+          "enum": ["dependency_break", "conan_patch"],
+          "description": "dependency_break: breaks a circular include; conan_patch: source fix for Conan compatibility"
+        },
+        "targetFile": {
+          "type": "string",
+          "description": "The source file to be patched (relative to view root)"
+        },
+        "additionalFiles": {
+          "type": "array",
+          "description": "Additional files created or modified as part of this patch (e.g., new forward-declaration header)",
+          "items": {
+            "type": "object",
+            "required": ["path", "action", "content"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string" },
+              "action": { "type": "string", "enum": ["create", "modify"] },
+              "content": { "type": "string", "description": "Full content for 'create'; unified diff for 'modify'" }
+            }
+          }
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Why this patch is needed"
+        },
+        "unifiedDiff": {
+          "type": "string",
+          "description": "The patch in unified diff format (--- a/ +++ b/)"
+        },
+        "riskLevel": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "approvalStatus": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"],
+          "default": "pending"
+        },
+        "approvedBy": {
+          "type": ["string", "null"],
+          "description": "GitHub username of the approver"
+        },
+        "approvedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "sccRef": {
+          "type": ["string", "null"],
+          "description": "Which SCC ID this patch addresses (for dependency_break patches)"
+        },
+        "strategy": {
+          "type": "string",
+          "description": "Strategy used: e.g., 'extract_interface_header', 'fix_include_path'"
+        },
+        "buildErrorRef": {
+          "type": ["string", "null"],
+          "description": "BuildError ID that triggered this patch proposal (for conan_patch type)"
+        },
+        "prCommentUrl": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "URL of the PR comment where this patch was posted for review"
+        }
+      }
+    }
+  }
+}

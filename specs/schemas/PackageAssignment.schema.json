@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/juichiache/clearcase-migration-agent/specs/schemas/PackageAssignment.schema.json",
+  "title": "PackageAssignment",
+  "description": "File-to-package mapping produced by the Planning Agent. Represents a diff against the existing partition.",
+  "type": "object",
+  "required": ["runId", "timestamp", "release", "product", "assignments"],
+  "additionalProperties": false,
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Unique run identifier linking to Manifest.json",
+      "pattern": "^plan-[0-9]{8}T[0-9]{6}Z(-[a-z0-9]+)?$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when this artifact was produced"
+    },
+    "release": {
+      "type": "string",
+      "description": "Release identifier (e.g., R2024.1)"
+    },
+    "product": {
+      "type": "string",
+      "description": "Product identifier scope for this assignment set"
+    },
+    "totalFilesAssigned": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "totalPackages": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "assignments": {
+      "type": "array",
+      "description": "One entry per source or header file",
+      "items": {
+        "$ref": "#/definitions/FileAssignment"
+      }
+    }
+  },
+  "definitions": {
+    "FileAssignment": {
+      "type": "object",
+      "required": ["filePath", "package", "status", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "filePath": {
+          "type": "string",
+          "description": "Path relative to ClearCase view root"
+        },
+        "package": {
+          "type": "string",
+          "description": "Assigned package name"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["proposed", "accepted", "locked", "conflict"],
+          "description": "proposed=new suggestion from agent; accepted=human-approved; locked=immutable; conflict=multiple conflicting assignments"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Agent's confidence in this assignment (0.0–1.0)"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Human-readable reason for any change from the existing assignment. Required when status is 'proposed'."
+        },
+        "previousPackage": {
+          "type": ["string", "null"],
+          "description": "The package previously assigned in the copy-map. Null if this file was unassigned."
+        },
+        "evidence": {
+          "type": "array",
+          "description": "Sources of evidence supporting this assignment",
+          "items": {
+            "$ref": "#/definitions/Evidence"
+          }
+        },
+        "conflictingPackages": {
+          "type": "array",
+          "description": "Populated when status is 'conflict'; lists all packages claiming this file",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forkable": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, this file may legitimately appear in multiple packages"
+        }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "required": ["type", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["build_record", "include_edge", "user_decision", "existing_copy_map", "orphan"]
+        },
+        "description": {
+          "type": "string"
+        },
+        "sourceRef": {
+          "type": "string",
+          "description": "Reference to the specific build record file, include edge ID, or UserDecision ID"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Relative weight of this evidence in the assignment decision"
+        }
+      }
+    }
+  }
+}

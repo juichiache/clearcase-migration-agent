@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/juichiache/clearcase-migration-agent/specs/schemas/CopyMapProposal.schema.json",
+  "title": "CopyMapProposal",
+  "description": "Proposed copy-map entries per package in the team's existing copy-map format. The 'entries' field format is TBD pending copy-map format confirmation. See open-questions.md §3.1.",
+  "type": "object",
+  "required": ["runId", "timestamp", "packages"],
+  "additionalProperties": false,
+  "properties": {
+    "runId": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "formatVersion": {
+      "type": "string",
+      "description": "Version of the copy-map format used. Set to 'TBD' until open-questions.md §3.1 is resolved.",
+      "default": "TBD"
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PackageCopyMap"
+      }
+    }
+  },
+  "definitions": {
+    "PackageCopyMap": {
+      "type": "object",
+      "required": ["packageName", "status", "entries"],
+      "additionalProperties": false,
+      "properties": {
+        "packageName": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["proposed", "accepted", "locked"],
+          "description": "Mirrors the status from PackageAssignment.json for this package's files"
+        },
+        "locked": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, this copy-map must not be regenerated or modified"
+        },
+        "entries": {
+          "type": "array",
+          "description": "Copy-map entries. Format is TBD — see open-questions.md §3.1. Fields below are placeholders.",
+          "items": {
+            "$ref": "#/definitions/CopyMapEntry"
+          }
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "CopyMapEntry": {
+      "type": "object",
+      "required": ["filePath"],
+      "additionalProperties": true,
+      "description": "A single copy-map entry. The 'additionalProperties: true' allows for team-specific format fields once the format is confirmed (see open-questions.md §3.1).",
+      "properties": {
+        "filePath": {
+          "type": "string",
+          "description": "File path relative to ClearCase view root"
+        },
+        "annotation": {
+          "type": "string",
+          "description": "Optional human annotation (e.g., 'public API', 'keep here')"
+        },
+        "forkable": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, this file is allowed in multiple packages"
+        }
+      }
+    }
+  }
+}
